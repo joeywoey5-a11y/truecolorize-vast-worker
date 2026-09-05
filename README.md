@@ -1,25 +1,29 @@
-# TrueColorize Vast.ai Serverless v1
+# TrueColorize Vast.ai Serverless v2 Lite
 
-Upload these files to the root of:
-https://github.com/joeywoey5-a11y/truecolorize-vast-worker
+This build is optimized for faster cold-start image pulling.
+
+Removed:
+- Stable DeOldify model
+- ResNet101 cache
+- unused runtime packages
 
 Build:
-docker build --platform linux/amd64 -t jaw2351968/truecolorize-vast:v1 .
-docker push jaw2351968/truecolorize-vast:v1
+```powershell
+docker build --platform linux/amd64 -t jaw2351968/truecolorize-vast:v2-lite .
+docker push jaw2351968/truecolorize-vast:v2-lite
+```
 
-Vast template:
-Image: jaw2351968/truecolorize-vast:v1
-Launch mode: Docker ENTRYPOINT
-Disk: 20 GB
-Visibility: Private
+In Vast use:
+- Image: `jaw2351968/truecolorize-vast`
+- Version Tag: `v2-lite`
 
-Environment variables:
-PYWORKER_REPO=https://github.com/joeywoey5-a11y/truecolorize-vast-worker
-PYWORKER_REF=main
-PYWORKER_DIR=/workspace/truecolorize-vast-worker
+In GitHub, replace these files in:
+https://github.com/joeywoey5-a11y/truecolorize-vast-worker
 
-On-start Script:
-wget -qO /tmp/truecolorize-start.sh https://raw.githubusercontent.com/joeywoey5-a11y/truecolorize-vast-worker/main/start_server.sh && bash /tmp/truecolorize-start.sh
+- Dockerfile
+- model_server.py
+- README.md
 
-Serverless route:
-POST /colorize
+The existing worker.py, run_model_server.py, requirements.txt and start_server.sh can remain unchanged.
+
+Keep the same environment variables and on-start script.

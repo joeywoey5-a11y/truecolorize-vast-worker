@@ -10,7 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      git ca-certificates curl wget libgomp1 && \
+      git ca-certificates curl libgomp1 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -29,7 +29,6 @@ RUN pip install --no-cache-dir \
     Pillow==9.3.0 \
     "tensorboardX>=1.6" \
     opencv-python-headless==4.8.1.78 \
-    "requests>=2.28,<3" \
     fastapi==0.115.0 \
     uvicorn==0.30.6 \
     "aiohttp>=3.9,<4" \
@@ -38,7 +37,6 @@ RUN pip install --no-cache-dir \
 RUN git clone --depth 1 https://github.com/jantic/DeOldify.git /app/DeOldify && \
     rm -rf /app/DeOldify/.git
 
-# Remove video/notebook-only imports from DeOldify's image runtime.
 RUN sed -i \
     -e '/^import ffmpeg$/d' \
     -e '/^import yt_dlp as youtube_dl$/d' \
@@ -47,14 +45,17 @@ RUN sed -i \
     -e '/^from IPython.display import Image as ipythonimage$/d' \
     /app/DeOldify/deoldify/visualize.py
 
-# Bake DeOldify image model weights into the image.
+# Artistic model only.
 RUN mkdir -p /app/DeOldify/models && \
-    python -c "import urllib.request; names=['ColorizeArtistic_gen.pth','ColorizeStable_gen.pth']; [(print('Downloading',n), urllib.request.urlretrieve('https://huggingface.co/spensercai/DeOldify/resolve/main/'+n,'/app/DeOldify/models/'+n)) for n in names]"
+    python -c "import urllib.request; n='ColorizeArtistic_gen.pth'; urllib.request.urlretrieve('https://huggingface.co/spensercai/DeOldify/resolve/main/'+n,'/app/DeOldify/models/'+n)"
 
-# Cache torchvision backbones so first request does not download them.
-RUN python -c "from torchvision import models; print('Caching ResNet34'); models.resnet34(weights=models.ResNet34_Weights.DEFAULT); print('Caching ResNet101'); models.resnet101(weights=models.ResNet101_Weights.DEFAULT)"
+# Artistic DeOldify uses ResNet34; cache only that encoder.
+RUN python -c "from torchvision import models; print('Caching ResNet34'); models.resnet34(weights=models.ResNet34_Weights.DEFAULT)"
 
-RUN mkdir -p /workspace /var/log/truecolorize && \
+RUN rm -rf /root/.cache/pip && \
+    find /usr/local/lib/python3.10/site-packages -type d -name '__pycache__' -prune -exec rm -rf '{}' + || true && \
+    find /app/DeOldify -type d -name '__pycache__' -prune -exec rm -rf '{}' + || true && \
+    mkdir -p /workspace /var/log/truecolorize && \
     chmod 777 /workspace /var/log/truecolorize
 
-CMD ["sh","-c","echo 'TrueColorize Vast container ready'; exec tail -f /dev/null"]
+CMD ["sh","-c","echo 'TrueColorize Vast Lite container ready'; exec tail -f /dev/null"]
